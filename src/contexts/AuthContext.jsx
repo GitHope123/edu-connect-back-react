@@ -1,10 +1,12 @@
+// src/contexts/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from "react";
 import { auth } from "../firebase/firebaseConfig";
 import { onAuthStateChanged } from "firebase/auth";
 
-export const AuthContext = createContext();
+// ✅ Definición correcta del contexto en el mismo archivo
+const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
+const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,4 +26,8 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-export const useAuth = () => useContext(AuthContext);
+// Hook personalizado para acceder fácilmente al contexto
+const useAuth = () => useContext(AuthContext);
+
+// ✅ Exportaciones unificadas
+export { AuthProvider, useAuth };
