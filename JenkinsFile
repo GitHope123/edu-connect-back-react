@@ -1,81 +1,45 @@
-pipeline {
-    agent any
+pipeline { 
+  agent any
 
-    environment {
-        // Configuración segura del token de Firebase
-        FIREBASE_TOKEN = credentials('FIREBASE_DEPLOY_TOKEN')
+  environment {
+    GOOGLE_APPLICATION_CREDENTIALS = credentials('FIREBASE_SERVICE_ACCOUNT_JSON')
+  }
+
+  stages {
+    stage('Checkout') {
+      steps {
+        git branch: 'main', url: 'https://github.com/GitHope123/edu-connect-back-react'
+      }
     }
 
-    stages {
-        stage('Checkout') {
-            steps {
-                // Clonar el repositorio
-                bat 'git clone https://github.com/GitHope123/edu-connect-back-react .'
-                bat 'git checkout main'
-            }
-        }
-
-        stage('Install dependencies') {
-            steps {
-                // Instalar dependencias (más rápido y consistente que npm install)
-                bat 'npm ci'
-            }
-        }
-
-        stage('Build') {
-            steps {
-                bat 'npm run build'
-                // Opcional: Archivar los resultados del build
-                archiveArtifacts artifacts: 'build\\**', fingerprint: true
-            }
-        }
-
-        stage('Test') {
-            steps {
-                // Ejecutar tests y generar reporte JUnit
-                bat 'npm test -- --reporters=default --reporters=jest-junit'
-                junit 'junit.xml'  // Reporte de resultados
-            }
-        }
-
-        stage('Setup Firebase') {
-            steps {
-                // Instalar Firebase Tools globalmente
-                bat 'npm install -g firebase-tools@latest'
-            }
-        }
-
-        stage('Deploy to Firebase') {
-            steps {
-                script {
-                    try {
-                        // Deploy con manejo de errores
-                        bat "firebase deploy --only hosting:educonnect-2025-777 --token %FIREBASE_TOKEN%"
-                    } catch (error) {
-                        echo "Error en deploy: ${error}"
-                        // Notificación opcional por email
-                        emailext subject: 'Fallo en deploy Firebase',
-                              body: "El deploy a Firebase ha fallado. Ver logs en ${env.BUILD_URL}",
-                              to: 'tu-email@example.com'
-                        error "Deploy fallido"
-                    }
-                }
-            }
-        }
+    stage('Install dependencies') {
+      steps {
+        bat 'npm install'  // Ejecuta instalación de paquetes en Windows
+      }
     }
 
-    post {
-        always {
-            // Limpieza y notificación final
-            bat 'rd /s /q node_modules'
-            echo "Pipeline completado - estado: ${currentBuild.result}"
-        }
-        success {
-            echo '¡Deploy exitoso!'
-            // Notificación de éxito opcional
-        }
-        failure {
-            echo 'Pipeline fallido. Consulta los logs para más detalles.'
-        }
+    stage('Build') {
+      steps {
+        bat 'npm run build'  // Construye la aplicación
+      }
     }
+
+    stage('Test') {
+      steps {
+        bat 'npm test'  // Ejecuta pruebas unitarias
+      }
+    }
+
+    stage('Setup Firebase') {
+      steps {
+        bat 'npm install -g firebase-tools'  // Instala CLI de Firebase globalmente
+      }
+    }
+
+    stage('Deploy to Firebase Hosting') {
+      steps {
+        bat 'firebase deploy --only hosting'  // Despliega solo hosting a Firebase
+      }
+    }
+  }
 }
