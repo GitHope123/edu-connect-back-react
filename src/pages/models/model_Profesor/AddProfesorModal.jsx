@@ -13,10 +13,9 @@ import {
   FormControlLabel,
   Switch,
   Grid,
-  Alert
 } from '@mui/material';
 
-const AddProfesorModal = ({ open, onClose, onSave, cargosValidos }) => {
+const AddProfesorModal = ({ open, onClose, onSave, cargosValidos = [] }) => {
   const [profesorData, setProfesorData] = useState({
     nombres: '',
     apellidos: '',
@@ -97,7 +96,7 @@ const AddProfesorModal = ({ open, onClose, onSave, cargosValidos }) => {
               helperText={errors.cargo}
               required
             >
-              {cargosValidos.map((cargo) => (
+              {(Array.isArray(cargosValidos) ? cargosValidos : []).map((cargo) => (
                 <MenuItem key={cargo} value={cargo}>
                   {cargo}
                 </MenuItem>

@@ -10,15 +10,13 @@ import {
   Box,
 } from '@mui/material';
 
-const niveles = ['Primaria', 'Secundaria'];
-const grados = [1, 2, 3, 4, 5, 6];
+const secciones = ['A', 'B', 'C', 'D', 'E']; // Todas las secciones disponibles
 
 const AddEstudianteModal = ({ open, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
-    nivel: '',
-    grado: '',
+    seccion: '',
     celularApoderado: '',
   });
 
@@ -55,33 +53,17 @@ const AddEstudianteModal = ({ open, onClose, onSave }) => {
           />
           <TextField
             select
-            label="Nivel"
-            name="nivel"
-            value={formData.nivel}
+            label="Sección"
+            name="seccion"
+            value={formData.seccion}
             onChange={handleChange}
             fullWidth
             required
           >
-            <MenuItem value="">Seleccione un nivel</MenuItem>
-            {niveles.map((nivel) => (
-              <MenuItem key={nivel} value={nivel}>
-                {nivel}
-              </MenuItem>
-            ))}
-          </TextField>
-          <TextField
-            select
-            label="Grado"
-            name="grado"
-            value={formData.grado}
-            onChange={handleChange}
-            fullWidth
-            required
-          >
-            <MenuItem value="">Seleccione un grado</MenuItem>
-            {grados.map((grado) => (
-              <MenuItem key={grado} value={grado}>
-                {grado}
+            <MenuItem value="">Seleccione una sección</MenuItem>
+            {secciones.map((seccion) => (
+              <MenuItem key={seccion} value={seccion}>
+                {seccion}
               </MenuItem>
             ))}
           </TextField>

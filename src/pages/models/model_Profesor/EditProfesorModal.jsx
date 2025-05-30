@@ -13,10 +13,18 @@ import {
   FormControlLabel,
   Switch,
   Grid,
-  Alert
+  InputAdornment,
+  IconButton
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 
-const EditProfesorModal = ({ open, onClose, onSave, profesor, cargosValidos }) => {
+const EditProfesorModal = ({
+  open,
+  onClose,
+  onSave,
+  profesor,
+  cargosValidos = [] // Valor por defecto
+}) => {
   const [profesorData, setProfesorData] = useState({
     nombres: '',
     apellidos: '',
@@ -26,7 +34,9 @@ const EditProfesorModal = ({ open, onClose, onSave, profesor, cargosValidos }) =
     password: '',
     tutor: false
   });
+
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     if (profesor) {
@@ -44,10 +54,14 @@ const EditProfesorModal = ({ open, onClose, onSave, profesor, cargosValidos }) =
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setProfesorData({
-      ...profesorData,
+    setProfesorData((prevData) => ({
+      ...prevData,
       [name]: type === 'checkbox' ? checked : value
-    });
+    }));
+  };
+
+  const handleClickShowPassword = () => {
+    setShowPassword((show) => !show);
   };
 
   const validate = () => {
@@ -111,11 +125,12 @@ const EditProfesorModal = ({ open, onClose, onSave, profesor, cargosValidos }) =
               helperText={errors.cargo}
               required
             >
-              {cargosValidos.map((cargo) => (
-                <MenuItem key={cargo} value={cargo}>
-                  {cargo}
-                </MenuItem>
-              ))}
+              {Array.isArray(cargosValidos) &&
+                cargosValidos.map((cargo) => (
+                  <MenuItem key={cargo} value={cargo}>
+                    {cargo}
+                  </MenuItem>
+                ))}
             </TextField>
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -145,12 +160,26 @@ const EditProfesorModal = ({ open, onClose, onSave, profesor, cargosValidos }) =
               fullWidth
               label="Contraseña"
               name="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               value={profesorData.password}
               onChange={handleChange}
               error={!!errors.password}
               helperText={errors.password}
               required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+                      onClick={handleClickShowPassword}
+                      edge="end"
+                      size="large"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                )
+              }}
             />
           </Grid>
           <Grid item xs={12}>

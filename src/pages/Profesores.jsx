@@ -1,4 +1,5 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState } from "react";
+import { Chip } from "@mui/material";
 import {
   Box,
   Typography,
@@ -18,7 +19,6 @@ import {
   Button,
   IconButton,
   Tooltip,
-  Chip,
 } from "@mui/material";
 import {
   collection,
@@ -56,22 +56,14 @@ const Profesores = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedProfesor, setSelectedProfesor] = useState(null);
 
-  // Cargos válidos
-  const cargosValidos = useMemo(
-    () => ["Formador", "Rector", "Docente", "Director"],
-    []
-  );
-
   useEffect(() => {
     const fetchProfesores = async () => {
       try {
         const snapshot = await getDocs(collection(db, "Profesor"));
-        const data = snapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .filter((profesor) => cargosValidos.includes(profesor.cargo));
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setProfesores(data);
       } catch (err) {
         console.error("Error al obtener profesores:", err);
@@ -82,7 +74,7 @@ const Profesores = () => {
     };
 
     fetchProfesores();
-  }, [cargosValidos]);
+  }, []);
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -93,11 +85,13 @@ const Profesores = () => {
     const fullName = `${profesor.nombres} ${profesor.apellidos}`.toLowerCase();
     const matchesSearch = fullName.includes(search.toLowerCase());
     const matchesCargo = cargoFilter ? profesor.cargo === cargoFilter : true;
-    const matchesTutor = tutorFilter
-      ? tutorFilter === "Sí"
-        ? profesor.tutor === true
-        : profesor.tutor === false
-      : true;
+    const matchesTutor =
+      tutorFilter !== ""
+        ? tutorFilter === "si"
+          ? profesor.tutor
+          : !profesor.tutor
+        : true;
+
     return matchesSearch && matchesCargo && matchesTutor;
   });
 
@@ -138,6 +132,11 @@ const Profesores = () => {
     }
   };
 
+  // Extraer cargos únicos para el filtro
+  const cargosUnicos = [
+    ...new Set(profesores.map((prof) => prof.cargo)),
+  ].filter(Boolean);
+
   return (
     <Box sx={{ p: 4 }}>
       <Box
@@ -167,38 +166,53 @@ const Profesores = () => {
         </Box>
       </Box>
 
+      {/* Filtros mejorados con ancho consistente */}
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md>
+        {/* Buscador - Más ancho */}
+        <Grid item xs={12} sm={6} md={4} lg={4}>
           <TextField
             fullWidth
-            label="Buscar por nombre o apellido"
+            label="Buscar por nombre"
             variant="outlined"
+            size="small"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
               setPage(0);
             }}
-            sx={{ minWidth: 220 }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+              },
+              minWidth: 250, // Ancho mínimo garantizado
+            }}
           />
         </Grid>
 
-        <Grid item xs={12} sm={6} md>
+        {/* Filtro de Cargo - Más ancho */}
+        <Grid item xs={12} sm={6} md={3} lg={3}>
           <TextField
             select
             fullWidth
             label="Filtrar por Cargo"
             variant="outlined"
+            size="small"
             value={cargoFilter}
             onChange={(e) => {
               setCargoFilter(e.target.value);
               setPage(0);
             }}
-            sx={{ minWidth: 220 }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+              },
+              minWidth: 200, // Ancho mínimo garantizado
+            }}
           >
             <MenuItem value="">
               <em>Todos los cargos</em>
             </MenuItem>
-            {cargosValidos.map((cargo) => (
+            {cargosUnicos.map((cargo) => (
               <MenuItem key={cargo} value={cargo}>
                 {cargo}
               </MenuItem>
@@ -206,28 +220,56 @@ const Profesores = () => {
           </TextField>
         </Grid>
 
-        <Grid item xs={12} sm={6} md>
+        {/* Filtro de Tutor - Más ancho */}
+        <Grid item xs={12} sm={6} md={3} lg={2}>
           <TextField
             select
             fullWidth
             label="Filtrar por Tutor"
             variant="outlined"
+            size="small"
             value={tutorFilter}
             onChange={(e) => {
               setTutorFilter(e.target.value);
               setPage(0);
             }}
-            sx={{ minWidth: 220 }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                borderRadius: "8px",
+              },
+              minWidth: 180, // Ancho mínimo garantizado
+            }}
           >
             <MenuItem value="">
               <em>Todos</em>
             </MenuItem>
-            <MenuItem value="Sí">Sí</MenuItem>
-            <MenuItem value="No">No</MenuItem>
+            <MenuItem value="si">Solo tutores</MenuItem>
+            <MenuItem value="no">No tutores</MenuItem>
           </TextField>
         </Grid>
-      </Grid>
 
+        {/* Botón Limpiar - Ajustado al nuevo layout */}
+        <Grid item xs={12} sm={6} md={2} lg={2}>
+          <Button
+            fullWidth
+            variant="outlined"
+            size="small"
+            onClick={() => {
+              setSearch("");
+              setCargoFilter("");
+              setTutorFilter("");
+              setPage(0);
+            }}
+            sx={{
+              height: "40px",
+              borderRadius: "8px",
+              minWidth: 120, // Ancho mínimo garantizado
+            }}
+          >
+            Limpiar filtros
+          </Button>
+        </Grid>
+      </Grid>
       {loading && (
         <Box sx={{ display: "flex", justifyContent: "center", my: 8 }}>
           <CircularProgress size={48} />
@@ -250,9 +292,9 @@ const Profesores = () => {
                   <TableCell>Nombres</TableCell>
                   <TableCell>Apellidos</TableCell>
                   <TableCell>Cargo</TableCell>
+                  <TableCell>DNI</TableCell>
                   <TableCell>Correo</TableCell>
                   <TableCell>Celular</TableCell>
-                  <TableCell>Password</TableCell>
                   <TableCell>Tutor</TableCell>
                   <TableCell align="center">Acciones</TableCell>
                 </TableRow>
@@ -263,15 +305,30 @@ const Profesores = () => {
                   .map((profesor, index) => (
                     <TableRow hover key={profesor.id} tabIndex={-1}>
                       <TableCell>{page * rowsPerPage + index + 1}</TableCell>
-                      <TableCell>{profesor.nombres}</TableCell>
-                      <TableCell>{profesor.apellidos}</TableCell>
+                      <TableCell>{profesor.nombres || "—"}</TableCell>
+                      <TableCell>{profesor.apellidos || "—"}</TableCell>
                       <TableCell>{profesor.cargo || "—"}</TableCell>
-                      <TableCell>{profesor.correo}</TableCell>
-                      <TableCell>{profesor.celular}</TableCell>
+                      <TableCell>{profesor.dni || "—"}</TableCell>
+                      <TableCell>{profesor.correo || "—"}</TableCell>
+                      <TableCell>{profesor.celular || "—"}</TableCell>
                       <TableCell>
-                        {"*".repeat(profesor.password?.length || 8)}
+                        {profesor.tutor ? (
+                          <Chip
+                            label="Sí"
+                            color="success"
+                            onClick={() =>
+                              alert(
+                                `Él es tutor de ${profesor.grado || "?"}° ${
+                                  profesor.seccion || "?"
+                                }`
+                              )
+                            }
+                            style={{ cursor: "pointer" }}
+                          />
+                        ) : (
+                          <Chip label="No" color="default" />
+                        )}
                       </TableCell>
-                      <TableCell>{profesor.tutor ? "Sí" : "No"}</TableCell>
                       <TableCell align="center">
                         <Tooltip title="Editar">
                           <IconButton
@@ -317,7 +374,6 @@ const Profesores = () => {
         open={openAddModal}
         onClose={() => setOpenAddModal(false)}
         onSave={handleAddProfesor}
-        cargosValidos={cargosValidos}
       />
 
       <EditProfesorModal
@@ -325,7 +381,6 @@ const Profesores = () => {
         onClose={() => setOpenEditModal(false)}
         onSave={handleEditProfesor}
         profesor={selectedProfesor}
-        cargosValidos={cargosValidos}
       />
 
       <DeleteProfesorModal

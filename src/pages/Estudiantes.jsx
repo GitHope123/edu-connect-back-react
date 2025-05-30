@@ -39,8 +39,9 @@ import AddEstudianteModal from "./models/model_Estudiante/AddEstudianteModal";
 import EditEstudianteModal from "./models/model_Estudiante/EditEstudianteModal";
 import DeleteEstudianteModal from "./models/model_Estudiante/DeleteEstudianteModal";
 
-const niveles = ["Primaria", "Secundaria"];
 const grados = [1, 2, 3, 4, 5, 6];
+const seccionesComunes = ["A", "B", "C", "D"];
+const seccionEspecial = "E"; // Solo para grado 1
 
 const Estudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
@@ -48,8 +49,8 @@ const Estudiantes = () => {
   const [error, setError] = useState(null);
 
   const [search, setSearch] = useState("");
-  const [nivelFilter, setNivelFilter] = useState("");
   const [gradoFilter, setGradoFilter] = useState("");
+  const [seccionFilter, setSeccionFilter] = useState("");
   const [incidenciasFilter, setIncidenciasFilter] = useState("");
 
   // Paginación
@@ -61,6 +62,14 @@ const Estudiantes = () => {
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedEstudiante, setSelectedEstudiante] = useState(null);
+
+  // Función para obtener las secciones disponibles según el grado seleccionado
+  const getSeccionesDisponibles = (grado) => {
+    if (grado === 1) {
+      return [...seccionesComunes, seccionEspecial];
+    }
+    return seccionesComunes;
+  };
 
   useEffect(() => {
     const fetchEstudiantes = async () => {
@@ -91,9 +100,11 @@ const Estudiantes = () => {
     const fullName =
       `${estudiante.nombres} ${estudiante.apellidos}`.toLowerCase();
     const matchesSearch = fullName.includes(search.toLowerCase());
-    const matchesNivel = nivelFilter ? estudiante.nivel === nivelFilter : true;
     const matchesGrado = gradoFilter
       ? Number(estudiante.grado) === Number(gradoFilter)
+      : true;
+    const matchesSeccion = seccionFilter
+      ? estudiante.seccion === seccionFilter
       : true;
     const matchesIncidencias = incidenciasFilter
       ? incidenciasFilter === "con"
@@ -101,7 +112,7 @@ const Estudiantes = () => {
         : (estudiante.cantidadIncidencias ?? 0) === 0
       : true;
 
-    return matchesSearch && matchesNivel && matchesGrado && matchesIncidencias;
+    return matchesSearch && matchesGrado && matchesSeccion && matchesIncidencias;
   });
 
   // Funciones CRUD
@@ -174,7 +185,7 @@ const Estudiantes = () => {
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <TextField
             fullWidth
             label="Buscar por nombre o apellido"
@@ -187,7 +198,7 @@ const Estudiantes = () => {
             sx={{ minWidth: 200 }}
           />
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <TextField
             select
             fullWidth
@@ -196,6 +207,7 @@ const Estudiantes = () => {
             value={gradoFilter}
             onChange={(e) => {
               setGradoFilter(e.target.value);
+              setSeccionFilter(""); // Resetear sección al cambiar grado
               setPage(0);
             }}
             sx={{ minWidth: 200 }}
@@ -205,35 +217,36 @@ const Estudiantes = () => {
             </MenuItem>
             {grados.map((grado) => (
               <MenuItem key={grado} value={grado}>
-                {grado}
+                {grado}° Grado
               </MenuItem>
             ))}
           </TextField>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <TextField
             select
             fullWidth
-            label="Filtrar por Nivel"
+            label="Filtrar por Sección"
             variant="outlined"
-            value={nivelFilter}
+            value={seccionFilter}
             onChange={(e) => {
-              setNivelFilter(e.target.value);
+              setSeccionFilter(e.target.value);
               setPage(0);
             }}
+            disabled={!gradoFilter}
             sx={{ minWidth: 200 }}
           >
             <MenuItem value="">
-              <em>Todos los niveles</em>
+              <em>Todas las secciones</em>
             </MenuItem>
-            {niveles.map((nivel) => (
-              <MenuItem key={nivel} value={nivel}>
-                {nivel}
+            {getSeccionesDisponibles(gradoFilter).map((seccion) => (
+              <MenuItem key={seccion} value={seccion}>
+                Sección {seccion}
               </MenuItem>
             ))}
           </TextField>
         </Grid>
-        <Grid item xs={12} sm={6} md={3}>
+        <Grid item xs={12} sm={6} md={4}>
           <TextField
             select
             fullWidth
@@ -275,8 +288,8 @@ const Estudiantes = () => {
                 <TableRow>
                   <TableCell>Nombres</TableCell>
                   <TableCell>Apellidos</TableCell>
-                  <TableCell>Nivel</TableCell>
                   <TableCell>Grado</TableCell>
+                  <TableCell>Sección</TableCell>
                   <TableCell>Celular Apoderado</TableCell>
                   <TableCell align="center">Incidencias</TableCell>
                   <TableCell align="center">Acciones</TableCell>
@@ -292,8 +305,8 @@ const Estudiantes = () => {
                         {estudiante.nombres}
                       </TableCell>
                       <TableCell>{estudiante.apellidos}</TableCell>
-                      <TableCell>{estudiante.nivel}</TableCell>
-                      <TableCell>{estudiante.grado}</TableCell>
+                      <TableCell>{estudiante.grado}°</TableCell>
+                      <TableCell>{estudiante.seccion}</TableCell>
                       <TableCell>{estudiante.celularApoderado}</TableCell>
                       <TableCell align="center">
                         <Chip
@@ -353,6 +366,8 @@ const Estudiantes = () => {
         open={openAddModal}
         onClose={() => setOpenAddModal(false)}
         onSave={handleAddEstudiante}
+        grados={grados}
+        getSeccionesDisponibles={getSeccionesDisponibles}
       />
 
       <EditEstudianteModal
@@ -360,6 +375,8 @@ const Estudiantes = () => {
         onClose={() => setOpenEditModal(false)}
         onSave={handleEditEstudiante}
         estudiante={selectedEstudiante}
+        grados={grados}
+        getSeccionesDisponibles={getSeccionesDisponibles}
       />
 
       <DeleteEstudianteModal

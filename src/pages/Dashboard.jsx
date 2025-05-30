@@ -54,7 +54,7 @@ const Dashboard = () => {
           <Grid
             item
             xs={12}
-            width={"27%"}
+            md={4}
             key={title}
             sx={{
               display: "flex",
@@ -93,12 +93,10 @@ const Dashboard = () => {
       {/* Gráficos */}
       <Box
         sx={{
-          backgroundColor: theme.palette.background.paper,
-          borderRadius: 3,
-          p: 2,
-          boxShadow: "none",
           width: "100%",
-          minHeight: "950px",
+          borderRadius: 3,
+          p: { xs: 2, md: 3 },
+          boxSizing: "border-box",
         }}
       >
         <ResumenGeneral />

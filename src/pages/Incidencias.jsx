@@ -25,22 +25,55 @@ import {
   IconButton,
   TextField,
   Grid,
-  Tooltip
+  Tooltip,
+  Avatar
 } from '@mui/material';
 import {
-  Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
   Close as CloseIcon,
-  Visibility as VisibilityIcon
+  Visibility as VisibilityIcon,
+  CheckCircle as CheckCircleIcon,
+  Notifications as NotificationsIcon,
+  EventNote as EventNoteIcon,
+  HourglassEmpty as HourglassEmptyIcon,
+  DoneAll as DoneAllIcon
 } from '@mui/icons-material';
-import { collection, getDocs, doc, deleteDoc, addDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebaseConfig';
 
 // Import modals
-import AddIncidenciaModal from './models/model_Incidencia/AddIncidenciaModal';
 import EditIncidenciaModal from './models/model_Incidencia/EditIncidenciaModal';
 import DeleteIncidenciaModal from './models/model_Incidencia/DeleteIncidenciaModal';
+
+// Estilos personalizados
+const estadoStyles = {
+  pendiente: {
+    bgcolor: '#FFF3E0',
+    color: '#E65100',
+    icon: <HourglassEmptyIcon fontSize="small" />
+  },
+  revisado: {
+    bgcolor: '#E3F2FD',
+    color: '#1565C0',
+    icon: <VisibilityIcon fontSize="small" />
+  },
+  notificado: {
+    bgcolor: '#E8F5E9',
+    color: '#2E7D32',
+    icon: <NotificationsIcon fontSize="small" />
+  },
+  citado: {
+    bgcolor: '#F3E5F5',
+    color: '#7B1FA2',
+    icon: <EventNoteIcon fontSize="small" />
+  },
+  completado: {
+    bgcolor: '#E8F5E9',
+    color: '#1B5E20',
+    icon: <DoneAllIcon fontSize="small" />
+  }
+};
 
 const Incidencias = () => {
   const [incidencias, setIncidencias] = useState([]);
@@ -50,15 +83,14 @@ const Incidencias = () => {
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
 
-  const [filtroAtencion, setFiltroAtencion] = useState('Todos');
   const [filtroTipo, setFiltroTipo] = useState('Todos');
   const [filtroImagen, setFiltroImagen] = useState('Todos');
+  const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [ordenFechaAsc, setOrdenFechaAsc] = useState(false);
   const [search, setSearch] = useState('');
 
   // Modal states
-  const [imagenSeleccionada, setImagenSeleccionada] = useState(null);
-  const [openAddModal, setOpenAddModal] = useState(false);
+  const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedIncidencia, setSelectedIncidencia] = useState(null);
@@ -97,6 +129,7 @@ const Incidencias = () => {
     let datos = [...incidencias];
 
     // Search filter
+    // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
       datos = datos.filter(inc => (
@@ -106,16 +139,15 @@ const Incidencias = () => {
         inc.detalle?.toLowerCase().includes(searchLower)
       ));
     }
-
-    if (filtroAtencion !== 'Todos') {
-      datos = datos.filter(
-        (inc) => inc.atencion && inc.atencion.toLowerCase() === filtroAtencion.toLowerCase()
-      );
-    }
-
     if (filtroTipo !== 'Todos') {
       datos = datos.filter(
         (inc) => inc.tipo && inc.tipo.toLowerCase() === filtroTipo.toLowerCase()
+      );
+    }
+
+    if (filtroEstado !== 'Todos') {
+      datos = datos.filter(
+        (inc) => inc.estado && inc.estado.toLowerCase() === filtroEstado.toLowerCase()
       );
     }
 
@@ -132,28 +164,15 @@ const Incidencias = () => {
     });
 
     return datos;
-  }, [incidencias, filtroAtencion, filtroTipo, filtroImagen, ordenFechaAsc, search]);
+  }, [incidencias, filtroTipo, filtroEstado, filtroImagen, ordenFechaAsc, search]);
 
-  const opcionesAtencion = useMemo(() => {
-    const setAtencion = new Set(incidencias.map((i) => i.atencion).filter(Boolean));
-    return ['Todos', ...Array.from(setAtencion)];
-  }, [incidencias]);
 
   const opcionesTipo = useMemo(() => {
     const setTipo = new Set(incidencias.map((i) => i.tipo).filter(Boolean));
     return ['Todos', ...Array.from(setTipo)];
   }, [incidencias]);
 
-  // CRUD Operations
-  const handleAddIncidencia = async (incidenciaData) => {
-    try {
-      const docRef = await addDoc(collection(db, 'Incidencia'), incidenciaData);
-      setIncidencias([...incidencias, { id: docRef.id, ...incidenciaData }]);
-    } catch (error) {
-      console.error('Error al añadir incidencia:', error);
-      setError('Error al añadir incidencia');
-    }
-  };
+  const opcionesEstado = ['Todos', 'pendiente', 'revisado', 'notificado', 'citado', 'completado'];
 
   const handleEditIncidencia = async (incidenciaData) => {
     try {
@@ -177,6 +196,23 @@ const Incidencias = () => {
     }
   };
 
+  const renderEstadoChip = (estado) => {
+    const estilo = estadoStyles[estado?.toLowerCase()] || estadoStyles.pendiente;
+    return (
+      <Chip
+        icon={estilo.icon}
+        label={estado}
+        sx={{
+          backgroundColor: estilo.bgcolor,
+          color: estilo.color,
+          fontWeight: 'bold',
+          px: 1,
+          borderRadius: 1
+        }}
+      />
+    );
+  };
+
   return (
     <Box sx={{ p: 4 }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
@@ -189,19 +225,12 @@ const Incidencias = () => {
             color="primary" 
             variant="outlined" 
           />
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={() => setOpenAddModal(true)}
-          >
-            Añadir Incidencia
-          </Button>
         </Box>
       </Box>
 
       {/* Filtros y buscador */}
       <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <TextField
             fullWidth
             label="Buscar (estudiante, profesor o detalle)"
@@ -213,26 +242,26 @@ const Incidencias = () => {
             }}
           />
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={6} sm={4} md={2}>
           <FormControl fullWidth>
-            <InputLabel>Atención</InputLabel>
+            <InputLabel>Estado</InputLabel>
             <Select
-              value={filtroAtencion}
-              label="Atención"
+              value={filtroEstado}
+              label="Estado"
               onChange={(e) => {
-                setFiltroAtencion(e.target.value);
+                setFiltroEstado(e.target.value);
                 setPage(0);
               }}
             >
-              {opcionesAtencion.map((opt) => (
+              {opcionesEstado.map((opt) => (
                 <MenuItem key={opt} value={opt}>
-                  {opt}
+                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
                 </MenuItem>
               ))}
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={6} sm={4} md={2}>
           <FormControl fullWidth>
             <InputLabel>Tipo</InputLabel>
             <Select
@@ -251,7 +280,7 @@ const Incidencias = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={6} sm={4} md={2}>
           <FormControl fullWidth>
             <InputLabel>Imagen</InputLabel>
             <Select
@@ -268,7 +297,7 @@ const Incidencias = () => {
             </Select>
           </FormControl>
         </Grid>
-        <Grid item xs={12} md={2}>
+        <Grid item xs={6} sm={4} md={2}>
           <Button
             fullWidth
             variant="outlined"
@@ -297,10 +326,11 @@ const Incidencias = () => {
                   <TableRow>
                     <TableCell>N°</TableCell>
                     <TableCell>Estudiante</TableCell>
-                    <TableCell>Profesor</TableCell>
+                    <TableCell>Emisor</TableCell>
                     <TableCell>Tipo</TableCell>
                     <TableCell>Estado</TableCell>
                     <TableCell>Fecha</TableCell>
+                    <TableCell align="center">Detalles</TableCell>
                     <TableCell align="center">Acciones</TableCell>
                   </TableRow>
                 </TableHead>
@@ -313,7 +343,7 @@ const Incidencias = () => {
                         <TableCell>
                           {incidencia.nombreEstudiante} {incidencia.apellidoEstudiante}
                           <Typography variant="body2" color="text.secondary">
-                            Grado: {incidencia.grado} {incidencia.nivel}
+                            Grado y Sección: {incidencia.grado} {incidencia.seccion}
                           </Typography>
                         </TableCell>
                         <TableCell>
@@ -324,17 +354,7 @@ const Incidencias = () => {
                         </TableCell>
                         <TableCell>{incidencia.tipo}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={incidencia.estado}
-                            color={
-                              incidencia.estado?.toLowerCase() === 'pendiente'
-                                ? 'warning'
-                                : incidencia.estado?.toLowerCase() === 'resuelto'
-                                ? 'success'
-                                : 'default'
-                            }
-                            size="small"
-                          />
+                          {renderEstadoChip(incidencia.estado)}
                         </TableCell>
                         <TableCell>
                           {incidencia.fecha}
@@ -343,17 +363,19 @@ const Incidencias = () => {
                           </Typography>
                         </TableCell>
                         <TableCell align="center">
-                          <Tooltip title="Ver detalles">
-                            <IconButton
-                              color="primary"
-                              onClick={() => {
-                                setSelectedIncidencia(incidencia);
-                                // Aquí podrías abrir un modal de visualización si lo deseas
-                              }}
-                            >
-                              <VisibilityIcon />
-                            </IconButton>
-                          </Tooltip>
+                          <Chip
+                            label="Ver detalles"
+                            color="primary"
+                            variant="outlined"
+                            onClick={() => {
+                              setSelectedIncidencia(incidencia);
+                              setOpenDetailsModal(true);
+                            }}
+                            clickable
+                            icon={<VisibilityIcon fontSize="small" />}
+                          />
+                        </TableCell>
+                        <TableCell align="center">
                           <Tooltip title="Editar">
                             <IconButton
                               color="primary"
@@ -376,16 +398,6 @@ const Incidencias = () => {
                               <DeleteIcon />
                             </IconButton>
                           </Tooltip>
-                          {incidencia.urlImagen && (
-                            <Tooltip title="Ver imagen">
-                              <IconButton
-                                color="secondary"
-                                onClick={() => setImagenSeleccionada(incidencia.urlImagen)}
-                              >
-                                <VisibilityIcon />
-                              </IconButton>
-                            </Tooltip>
-                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -403,18 +415,18 @@ const Incidencias = () => {
             />
           </Paper>
 
-          {/* Modal para mostrar imagen */}
+          {/* Modal para mostrar detalles */}
           <Dialog
-            open={Boolean(imagenSeleccionada)}
-            onClose={() => setImagenSeleccionada(null)}
-            maxWidth="sm"
+            open={openDetailsModal}
+            onClose={() => setOpenDetailsModal(false)}
+            maxWidth="md"
             fullWidth
           >
             <DialogTitle sx={{ m: 0, p: 2 }}>
-              Imagen de la Incidencia
+              Detalles de la Incidencia
               <IconButton
                 aria-label="cerrar"
-                onClick={() => setImagenSeleccionada(null)}
+                onClick={() => setOpenDetailsModal(false)}
                 sx={{
                   position: 'absolute',
                   right: 8,
@@ -425,24 +437,106 @@ const Incidencias = () => {
                 <CloseIcon />
               </IconButton>
             </DialogTitle>
-            <DialogContent dividers sx={{ display: 'flex', justifyContent: 'center' }}>
-              <img
-                src={imagenSeleccionada}
-                alt="Incidencia"
-                style={{ maxWidth: '100%', maxHeight: '70vh', borderRadius: 8 }}
-              />
+            <DialogContent dividers>
+              {selectedIncidencia && (
+                <Grid container spacing={3}>
+                  {selectedIncidencia.urlImagen && (
+                    <Grid item xs={12} md={6}>
+                      <Box sx={{ 
+                        p: 2, 
+                        backgroundColor: '#f5f5f5', 
+                        borderRadius: 2,
+                        display: 'flex',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                        height: '100%'
+                      }}>
+                        <img
+                          src={selectedIncidencia.urlImagen}
+                          alt="Incidencia"
+                          style={{ 
+                            maxWidth: '100%', 
+                            maxHeight: '400px', 
+                            borderRadius: 8,
+                            objectFit: 'contain'
+                          }}
+                        />
+                      </Box>
+                    </Grid>
+                  )}
+                  <Grid item xs={12} md={selectedIncidencia.urlImagen ? 6 : 12}>
+                    <Box sx={{ 
+                      p: 3,
+                      backgroundColor: '#fafafa',
+                      borderRadius: 2,
+                      height: '100%'
+                    }}>
+                      <Typography variant="h6" gutterBottom>
+                        Información de la Incidencia
+                      </Typography>
+                      
+                      <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Estudiante:</Typography>
+                          <Typography>
+                            {selectedIncidencia.nombreEstudiante} {selectedIncidencia.apellidoEstudiante}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Grado/Nivel:</Typography>
+                          <Typography>
+                            {selectedIncidencia.grado} {selectedIncidencia.nivel}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Profesor:</Typography>
+                          <Typography>
+                            {selectedIncidencia.nombreProfesor} {selectedIncidencia.apellidoProfesor}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Cargo:</Typography>
+                          <Typography>{selectedIncidencia.cargo}</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Tipo:</Typography>
+                          <Typography>{selectedIncidencia.tipo}</Typography>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Estado:</Typography>
+                          {renderEstadoChip(selectedIncidencia.estado)}
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <Typography variant="subtitle2">Fecha:</Typography>
+                          <Typography>
+                            {selectedIncidencia.fecha} - {selectedIncidencia.hora}
+                          </Typography>
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Typography variant="subtitle2">Detalles:</Typography>
+                          <Box sx={{ 
+                            p: 2, 
+                            backgroundColor: '#ffffff', 
+                            borderRadius: 1,
+                            border: '1px solid #e0e0e0',
+                            mt: 1
+                          }}>
+                            <Typography>
+                              {selectedIncidencia.detalle || 'No hay detalles adicionales'}
+                            </Typography>
+                          </Box>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Grid>
+                </Grid>
+              )}
             </DialogContent>
           </Dialog>
         </>
       )}
 
       {/* Modals CRUD */}
-      <AddIncidenciaModal
-        open={openAddModal}
-        onClose={() => setOpenAddModal(false)}
-        onSave={handleAddIncidencia}
-      />
-
       <EditIncidenciaModal
         open={openEditModal}
         onClose={() => setOpenEditModal(false)}

@@ -1,45 +1,91 @@
-pipeline { 
+pipeline {
   agent any
 
   environment {
-    GOOGLE_APPLICATION_CREDENTIALS = credentials('FIREBASE_SERVICE_ACCOUNT_JSON')
+    // El ID de la credencial en Jenkins debe ser exactamente "FIREBASE_TOKEN"
+    FIREBASE_TOKEN = credentials('FIREBASE_TOKEN')
+
+    // Ruta donde npm instala paquetes globales (Firebase CLI)
+    NPM_GLOBAL_PATH = 'C:\\Users\\Administrator\\AppData\\Roaming\\npm'
   }
 
   stages {
-    stage('Checkout') {
+    stage('Clonar repositorio') {
       steps {
-        git branch: 'main', url: 'https://github.com/GitHope123/edu-connect-back-react'
+        git branch: 'main',
+            url: 'https://github.com/GitHope123/edu-connect-back-react'
       }
     }
 
-    stage('Install dependencies') {
+    stage('Configurar PowerShell') {
       steps {
-        bat 'npm install'  // Ejecuta instalación de paquetes en Windows
+        script {
+          echo "🔧 Configurando política de ejecución de PowerShell..."
+          powershell 'Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process -Force'
+        }
       }
     }
 
-    stage('Build') {
+    stage('Verificar Node y Firebase CLI') {
       steps {
-        bat 'npm run build'  // Construye la aplicación
+        script {
+          echo "🔍 Verificando Node.js y Firebase CLI..."
+
+          bat 'node -v'
+          bat 'npm -v'
+
+          def cmdPrefix = "set PATH=%NPM_GLOBAL_PATH%;%PATH% && "
+          def firebaseInstalled = bat(script: "${cmdPrefix}firebase --version", returnStatus: true) == 0
+
+          if (!firebaseInstalled) {
+            echo "⚙️ Firebase CLI no encontrada. Instalando..."
+            bat 'npm install -g firebase-tools'
+            bat "${cmdPrefix}firebase --version"
+          } else {
+            echo "✅ Firebase CLI ya está instalada."
+          }
+        }
+      }
+    }
+
+    stage('Instalar dependencias') {
+      steps {
+        bat 'npm install'
       }
     }
 
     stage('Test') {
       steps {
-        bat 'npm test'  // Ejecuta pruebas unitarias
+        script {
+          echo "🧪 Ejecutando pruebas..."
+          bat 'npm test'
+        }
       }
     }
 
-    stage('Setup Firebase') {
+    stage('Compilar proyecto') {
       steps {
-        bat 'npm install -g firebase-tools'  // Instala CLI de Firebase globalmente
+        bat 'npm run build'
       }
     }
 
-    stage('Deploy to Firebase Hosting') {
+    stage('Desplegar en Firebase') {
       steps {
-        bat 'firebase deploy --only hosting'  // Despliega solo hosting a Firebase
+        script {
+          echo "🚀 Desplegando a Firebase..."
+          def cmdPrefix = "set PATH=%NPM_GLOBAL_PATH%;%PATH% && "
+          bat "${cmdPrefix}firebase deploy --token %FIREBASE_TOKEN%"
+        }
       }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ Despliegue exitoso en Firebase.'
+    }
+    failure {
+      echo '❌ Despliegue fallido en Firebase.'
     }
   }
 }

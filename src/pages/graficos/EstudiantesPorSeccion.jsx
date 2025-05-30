@@ -2,18 +2,18 @@ import React from 'react';
 import { Box, Typography, Paper, useTheme } from '@mui/material';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-const EstudiantesPorNivel = ({ estudiantes }) => {
+const EstudiantesPorSeccion = ({ estudiantes }) => {
   const theme = useTheme();
 
   const getData = () => {
-    const countByLevel = estudiantes.reduce((acc, { nivel }) => {
-      if (nivel) { // Solo contar si existe el nivel
-        acc[nivel] = (acc[nivel] || 0) + 1;
+    const countBySeccion = estudiantes.reduce((acc, { seccion }) => {
+      if (seccion) {
+        acc[seccion] = (acc[seccion] || 0) + 1;
       }
       return acc;
     }, {});
 
-    return Object.entries(countByLevel).map(([name, value]) => ({
+    return Object.entries(countBySeccion).map(([name, value]) => ({
       name,
       value
     }));
@@ -22,45 +22,45 @@ const EstudiantesPorNivel = ({ estudiantes }) => {
   const data = getData();
 
   return (
-    <Paper elevation={3} sx={{ 
-      p: 2, 
+    <Paper elevation={3} sx={{
+      p: 2,
       height: '100%',
+      minHeight: 300,
+      maxHeight: 400,
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '400px' // Altura mínima garantizada
     }}>
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
-        Distribución de Estudiantes por Nivel Educativo
+        Distribución de Estudiantes por Sección
       </Typography>
-      
+
       {data.length > 0 ? (
         <Box sx={{
           flex: 1,
           width: '100%',
-          minWidth: 500,
           height: '100%',
-          minHeight: '350px'
+          overflowY: 'auto',
         }}>
-          <ResponsiveContainer width="100%" height="100%">
+          <ResponsiveContainer width="100%" height={Math.max(300, Math.min(400, data.length * 40))}>
             <BarChart
               data={data}
-              layout="vertical" // Cambiado a vertical para mejor uso del espacio
+              layout="vertical"
               margin={{
                 top: 20,
                 right: 30,
-                left: 40, // Más espacio para etiquetas
+                left: 40,
                 bottom: 20,
               }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
-              <YAxis 
-                dataKey="name" 
-                type="category" 
-                width={100} // Más espacio para nombres de niveles
+              <YAxis
+                dataKey="name"
+                type="category"
+                width={100}
                 tick={{ fontSize: theme.typography.body2.fontSize }}
               />
-              <Tooltip 
+              <Tooltip
                 contentStyle={{
                   borderRadius: theme.shape.borderRadius,
                   boxShadow: theme.shadows[3],
@@ -68,14 +68,12 @@ const EstudiantesPorNivel = ({ estudiantes }) => {
                 }}
               />
               <Legend />
-              <Bar 
-                dataKey="value" 
-                fill={theme.palette.primary.main} 
+              <Bar
+                dataKey="value"
+                fill={theme.palette.primary.main}
                 name="Cantidad de Estudiantes"
-                //el ancho de la barra se ajusta automáticamente
-                // pero puedes establecer un valor fijo si lo prefieres
-                barSize={70}
-                radius={[0, 4, 4, 0]} // Bordes redondeados solo a la derecha
+                barSize={40}
+                radius={[0, 4, 4, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -85,7 +83,7 @@ const EstudiantesPorNivel = ({ estudiantes }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          height: '350px',
+          height: 300,
           color: theme.palette.text.secondary
         }}>
           <Typography variant="body2">
@@ -97,4 +95,4 @@ const EstudiantesPorNivel = ({ estudiantes }) => {
   );
 };
 
-export default EstudiantesPorNivel;
+export default EstudiantesPorSeccion;

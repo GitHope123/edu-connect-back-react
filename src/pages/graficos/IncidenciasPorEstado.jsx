@@ -21,12 +21,13 @@ const IncidenciasPorEstado = ({ incidencias }) => {
   const data = getData();
 
   return (
-    <Paper elevation={3} sx={{ 
-      p: 2, 
+    <Paper elevation={3} sx={{
+      p: 2,
       height: '100%',
+      minHeight: 350,
+      maxHeight: 400,
       display: 'flex',
       flexDirection: 'column',
-      minHeight: '400px'
     }}>
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
         Distribución de Incidencias por Estado
@@ -37,8 +38,6 @@ const IncidenciasPorEstado = ({ incidencias }) => {
           flex: 1,
           width: '100%',
           height: '100%',
-          minWidth: 500,
-          minHeight: '350px'
         }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
@@ -47,7 +46,7 @@ const IncidenciasPorEstado = ({ incidencias }) => {
                 top: 20,
                 right: 30,
                 left: 20,
-                bottom: 40, // espacio suficiente para etiquetas horizontales
+                bottom: 40,
               }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
@@ -72,7 +71,7 @@ const IncidenciasPorEstado = ({ incidencias }) => {
                 fill={theme.palette.secondary.main} 
                 name="Número de Incidencias"
                 radius={[4, 4, 0, 0]} 
-                barSize={70}// Bordes redondeados arriba
+                barSize={70}
               />
             </BarChart>
           </ResponsiveContainer>
@@ -82,7 +81,7 @@ const IncidenciasPorEstado = ({ incidencias }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          height: '350px',
+          flex: 1,
           color: theme.palette.text.secondary
         }}>
           <Typography variant="body2">
