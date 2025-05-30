@@ -51,14 +51,14 @@ const TopEstudiantesIncidencias = ({ estudiantes = [] }) => {
           flex: 1, 
           width: '100%', 
           height: '100%',
-          overflow: 'hidden' // Previene desbordamiento
+          overflow: 'hidden'
         }}>
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
               layout="vertical"
               margin={chartMargins}
-              barSize={isSmallScreen ? 12 : 18} // Barras más delgadas en móviles
+              barSize={isSmallScreen ? 12 : 18}
             >
               <CartesianGrid strokeDasharray="3 3" stroke={theme.palette.divider} />
               <XAxis 
@@ -84,7 +84,7 @@ const TopEstudiantesIncidencias = ({ estudiantes = [] }) => {
               <Bar 
                 dataKey="incidencias" 
                 name="Incidencias"
-                radius={[0, 4, 4, 0]} // Bordes redondeados solo a la derecha
+                radius={[0, 4, 4, 0]}
               >
                 {data.map((entry, index) => (
                   <Cell 

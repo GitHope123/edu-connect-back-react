@@ -22,26 +22,26 @@ const EstudiantesPorSeccion = ({ estudiantes }) => {
   const data = getData();
 
   return (
-    <Paper elevation={3} sx={{
-      p: 2,
+    <Paper elevation={3} sx={{ 
+      p: 2, 
       height: '100%',
-      minHeight: 300,
-      maxHeight: 400,
       display: 'flex',
       flexDirection: 'column',
+      minHeight: '400px'
     }}>
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
         Distribución de Estudiantes por Sección
       </Typography>
-
+      
       {data.length > 0 ? (
         <Box sx={{
           flex: 1,
           width: '100%',
+          minWidth: 500,
           height: '100%',
-          overflowY: 'auto',
+          minHeight: '350px'
         }}>
-          <ResponsiveContainer width="100%" height={Math.max(300, Math.min(400, data.length * 40))}>
+          <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
               layout="vertical"
@@ -54,13 +54,13 @@ const EstudiantesPorSeccion = ({ estudiantes }) => {
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis type="number" />
-              <YAxis
-                dataKey="name"
-                type="category"
+              <YAxis 
+                dataKey="name" 
+                type="category" 
                 width={100}
                 tick={{ fontSize: theme.typography.body2.fontSize }}
               />
-              <Tooltip
+              <Tooltip 
                 contentStyle={{
                   borderRadius: theme.shape.borderRadius,
                   boxShadow: theme.shadows[3],
@@ -68,11 +68,11 @@ const EstudiantesPorSeccion = ({ estudiantes }) => {
                 }}
               />
               <Legend />
-              <Bar
-                dataKey="value"
-                fill={theme.palette.primary.main}
+              <Bar 
+                dataKey="value" 
+                fill={theme.palette.primary.main} 
                 name="Cantidad de Estudiantes"
-                barSize={40}
+                barSize={70}
                 radius={[0, 4, 4, 0]}
               />
             </BarChart>
@@ -83,7 +83,7 @@ const EstudiantesPorSeccion = ({ estudiantes }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          height: 300,
+          height: '350px',
           color: theme.palette.text.secondary
         }}>
           <Typography variant="body2">

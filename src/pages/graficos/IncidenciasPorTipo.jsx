@@ -24,13 +24,12 @@ const IncidenciasPorTipo = ({ incidencias }) => {
   const data = getData();
 
   return (
-    <Paper elevation={3} sx={{
-      p: 2,
+    <Paper elevation={3} sx={{ 
+      p: 2, 
       height: '100%',
-      minHeight: 350,
-      maxHeight: 400,
       display: 'flex',
       flexDirection: 'column',
+      minHeight: '400px'
     }}>
       <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 'bold' }}>
         Distribución de Incidencias por Tipo
@@ -41,6 +40,8 @@ const IncidenciasPorTipo = ({ incidencias }) => {
           flex: 1,
           width: '100%',
           height: '100%',
+          minWidth: 500,
+          minHeight: '350px'
         }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
@@ -75,7 +76,7 @@ const IncidenciasPorTipo = ({ incidencias }) => {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          flex: 1,
+          height: '350px',
           color: theme.palette.text.secondary
         }}>
           <Typography variant="body2">
