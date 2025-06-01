@@ -1,8 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes, useLocation, Navigate, NavLink } from 'react-router-dom';
 import { Box, CssBaseline, Breadcrumbs, Typography } from '@mui/material';
-import { styled, useTheme, ThemeProvider, createTheme } from '@mui/material/styles';
+import { styled, useTheme, ThemeProvider } from '@mui/material/styles';
 
+import theme from './theme/theme'; // Importamos el tema personalizado
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
@@ -14,29 +15,12 @@ import Estudiantes from './pages/Estudiantes';
 import Profesores from './pages/Profesores';
 import Incidencias from './pages/Incidencias';
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: '#1976d2',
-    },
-    secondary: {
-      main: '#dc004e',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-  },
-  shape: {
-    borderRadius: 8,
-  },
-});
-
-const MainContent = styled(Box)(() => ({
+// Componentes estilizados utilizando el tema importado
+const MainContent = styled(Box)(({ theme }) => ({
   flexGrow: 1,
   marginLeft: 0,
   width: `calc(100% - 240px)`,
-  backgroundColor: '#f5f5f5',
+  background: theme.palette.background.default,
   minHeight: '100vh',
   display: 'flex',
   flexDirection: 'column',
@@ -45,15 +29,17 @@ const MainContent = styled(Box)(() => ({
 const ContentWrapper = styled(Box)(({ theme }) => ({
   flex: 1,
   padding: theme.spacing(3),
-  backgroundColor: '#fff',
+  background: theme.palette.background.paper,
   borderRadius: theme.shape.borderRadius,
   boxShadow: theme.shadows[2],
   margin: theme.spacing(4, 3),
+  backdropFilter: 'blur(8px)',
+  border: '1px solid rgba(255, 255, 255, 0.3)'
 }));
 
 const App = () => {
   return (
-    <ThemeProvider theme={theme}>
+    <ThemeProvider theme={theme}> {/* Usamos el tema importado */}
       <AuthProvider>
         <Router>
           <Routes>
@@ -70,9 +56,10 @@ const App = () => {
   );
 };
 
-// Layout para la página de login (versión corregida)
+// Layout para la página de login con estilos del tema
 const LoginLayout = () => {
   const { user } = useAuth();
+  const theme = useTheme();
   
   if (user) {
     return <Navigate to="/" replace />;
@@ -86,7 +73,7 @@ const LoginLayout = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)',
+        background: 'linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%)',
         backgroundSize: 'cover',
       }}
     >
@@ -95,7 +82,12 @@ const LoginLayout = () => {
         sx={{
           width: '100%',
           maxWidth: { xs: '90%', sm: '400px' },
-          padding: 3
+          padding: 3,
+          background: theme.palette.background.paper,
+          borderRadius: theme.shape.borderRadius,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.2)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)'
         }}
       >
         <Login />

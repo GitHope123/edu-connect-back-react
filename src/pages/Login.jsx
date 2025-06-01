@@ -2,15 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../firebase/firebaseConfig';
-import { 
-  TextField, 
-  Button, 
-  Box, 
+import {
+  TextField,
+  Button,
+  Box,
   Typography,
-  Paper,
-  Avatar
+  Container,
 } from '@mui/material';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +18,7 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
     try {
       await signInWithEmailAndPassword(auth, email, password);
       navigate('/');
@@ -29,75 +28,74 @@ const Login = () => {
   };
 
   return (
-    <Paper
-      elevation={6}
-      sx={{
-        width: '100%',
-        p: 4,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        borderRadius: 2,
-        backgroundColor: 'background.paper'
-      }}
-    >
-      <Avatar sx={{ m: 1, bgcolor: 'primary.main' }}>
-        <LockOutlinedIcon />
-      </Avatar>
-      <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-        Iniciar Sesión
-      </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'center' }}>
-        Ingresa tus credenciales para acceder al sistema.
-            </Typography>
-      
-      {error && (
-        <Typography color="error" sx={{ mb: 2, width: '100%', textAlign: 'center' }}>
-          {error}
-        </Typography>
-      )}
-      
-      <Box 
-        component="form" 
+    <Container maxWidth="xs">
+      <Box
+        component="form"
         onSubmit={handleSubmit}
-        sx={{ width: '100%' }}
+        sx={{
+          width: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 2,
+          padding: 0,
+          alignItems: 'center',
+          textAlign: 'center',
+          mt: 8,
+        }}
       >
+        {/* Logo */}
+        <Box sx={{ mb: 2 }}>
+          <img src="/logo_login_pro.svg" alt="Logo EduConnet" style={{ height: 60 }} />
+        </Box>
+
+        {/* Título */}
+        <Typography variant="h5" fontWeight="bold">
+          Iniciar Sesión
+        </Typography>
+
+        {/* Mensaje de bienvenida */}
+        <Typography variant="body2" color="textSecondary">
+          Complete sus credenciales para continuar
+        </Typography>
+
+        {/* Mensaje de error */}
+        {error && (
+          <Typography color="error" fontWeight="500">
+            {error}
+          </Typography>
+        )}
+
+        {/* Campos de formulario */}
         <TextField
-          margin="normal"
+          label="Correo electrónico"
+          type="email"
           required
           fullWidth
-          label="Correo electrónico"
-          autoComplete="email"
-          autoFocus
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          variant="outlined"
         />
+
         <TextField
-          margin="normal"
-          required
-          fullWidth
           label="Contraseña"
           type="password"
-          autoComplete="current-password"
+          required
+          fullWidth
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          variant="outlined"
         />
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ 
-            mt: 3, 
-            mb: 2,
-            py: 1.5,
-            fontSize: '1rem',
-            fontWeight: 'bold'
-          }}
-        >
+
+        <Button type="submit" variant="contained" fullWidth sx={{ mt: 1 }}>
           Ingresar
         </Button>
+
+        {/* Pie de página con nombre de empresa */}
+        <Typography variant="caption" color="textSecondary" sx={{ mt: 3 }}>
+          &copy; {new Date().getFullYear()} @EduConnet. Todos los derechos reservados.
+        </Typography>
       </Box>
-    </Paper>
+    </Container>
   );
 };
 
