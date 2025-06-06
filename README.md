@@ -13,9 +13,7 @@ La autenticación se realiza mediante **Firebase Authentication**, lo que garant
 Además, el sistema incluye un **control de roles** básico, permitiendo que solo usuarios con perfil **administrador** puedan:
 
 - Iniciar sesión en el sistema
-- Crear, editar y eliminar incidencias
-- Administrar usuarios y datos sensibles
-
+- Administrar miembros de la institución y datos sensibles
 ---
 
 ## 🌐 Comunicación con la Base de Datos
