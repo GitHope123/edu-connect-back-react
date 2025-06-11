@@ -13,27 +13,13 @@ import {
   Paper,
   Chip,
   TablePagination,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Stack,
-  Button,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   IconButton,
-  TextField,
-  Grid,
   Tooltip,
-  Avatar
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  Close as CloseIcon,
   Visibility as VisibilityIcon,
-  CheckCircle as CheckCircleIcon,
   Notifications as NotificationsIcon,
   EventNote as EventNoteIcon,
   HourglassEmpty as HourglassEmptyIcon,
@@ -45,6 +31,8 @@ import { db } from '../firebase/firebaseConfig';
 // Import modals
 import EditIncidenciaModal from './models/model_Incidencia/EditIncidenciaModal';
 import DeleteIncidenciaModal from './models/model_Incidencia/DeleteIncidenciaModal';
+import FiltrosIncidencias from './models/model_Incidencia/FiltrosIncidencias';
+import DetalleIncidenciaModal from './models/model_Incidencia/DetalleIncidenciaModal';
 
 // Estilos personalizados
 const estadoStyles = {
@@ -75,6 +63,60 @@ const estadoStyles = {
   }
 };
 
+// Estilo uniforme para los filtros
+const filterStyles = {
+  formControl: {
+    minWidth: 180,
+    '& .MuiInputLabel-root': {
+      color: '#555',
+      fontWeight: 500
+    },
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      '& fieldset': {
+        borderColor: '#ddd',
+      },
+      '&:hover fieldset': {
+        borderColor: '#aaa',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#3f51b5',
+      },
+    },
+    '& .MuiSelect-select': {
+      padding: '12px 14px',
+    }
+  },
+  textField: {
+    '& .MuiOutlinedInput-root': {
+      borderRadius: 2,
+      '& fieldset': {
+        borderColor: '#ddd',
+      },
+      '&:hover fieldset': {
+        borderColor: '#aaa',
+      },
+      '&.Mui-focused fieldset': {
+        borderColor: '#3f51b5',
+      },
+    },
+    '& .MuiInputLabel-root': {
+      color: '#555',
+      fontWeight: 500
+    }
+  },
+  button: {
+    height: '56px',
+    borderRadius: 2,
+    textTransform: 'none',
+    fontWeight: 500,
+    boxShadow: 'none',
+    '&:hover': {
+      boxShadow: 'none'
+    }
+  }
+};
+
 const Incidencias = () => {
   const [incidencias, setIncidencias] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,10 +126,11 @@ const Incidencias = () => {
   const rowsPerPage = 10;
 
   const [filtroTipo, setFiltroTipo] = useState('Todos');
-  const [filtroImagen, setFiltroImagen] = useState('Todos');
   const [filtroEstado, setFiltroEstado] = useState('Todos');
   const [ordenFechaAsc, setOrdenFechaAsc] = useState(false);
   const [search, setSearch] = useState('');
+  const [fechaInicio, setFechaInicio] = useState(null);
+  const [fechaFin, setFechaFin] = useState(null);
 
   // Modal states
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
@@ -128,7 +171,16 @@ const Incidencias = () => {
   const incidenciasFiltradas = useMemo(() => {
     let datos = [...incidencias];
 
-    // Search filter
+    // Filtro por rango de fechas
+    if (fechaInicio && fechaFin) {
+      const inicio = new Date(fechaInicio.setHours(0,0,0,0));
+      const fin = new Date(fechaFin.setHours(23,59,59,999));
+      datos = datos.filter((inc) => {
+        const fechaInc = parseFecha(inc.fecha);
+        return fechaInc >= inicio && fechaInc <= fin;
+      });
+    }
+
     // Search filter
     if (search) {
       const searchLower = search.toLowerCase();
@@ -150,13 +202,6 @@ const Incidencias = () => {
         (inc) => inc.estado && inc.estado.toLowerCase() === filtroEstado.toLowerCase()
       );
     }
-
-    if (filtroImagen === 'Con Imagen') {
-      datos = datos.filter((inc) => inc.urlImagen);
-    } else if (filtroImagen === 'Sin Imagen') {
-      datos = datos.filter((inc) => !inc.urlImagen);
-    }
-
     datos.sort((a, b) => {
       const fechaA = parseFecha(a.fecha);
       const fechaB = parseFecha(b.fecha);
@@ -164,9 +209,8 @@ const Incidencias = () => {
     });
 
     return datos;
-  }, [incidencias, filtroTipo, filtroEstado, filtroImagen, ordenFechaAsc, search]);
-
-
+  }, [incidencias, filtroTipo, filtroEstado, ordenFechaAsc, search, fechaInicio, fechaFin]);
+  
   const opcionesTipo = useMemo(() => {
     const setTipo = new Set(incidencias.map((i) => i.tipo).filter(Boolean));
     return ['Todos', ...Array.from(setTipo)];
@@ -229,85 +273,32 @@ const Incidencias = () => {
       </Box>
 
       {/* Filtros y buscador */}
-      <Grid container spacing={2} sx={{ mb: 3 }}>
-        <Grid item xs={12} md={3}>
-          <TextField
-            fullWidth
-            label="Buscar (estudiante, profesor o detalle)"
-            variant="outlined"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0);
-            }}
-          />
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>Estado</InputLabel>
-            <Select
-              value={filtroEstado}
-              label="Estado"
-              onChange={(e) => {
-                setFiltroEstado(e.target.value);
-                setPage(0);
-              }}
-            >
-              {opcionesEstado.map((opt) => (
-                <MenuItem key={opt} value={opt}>
-                  {opt.charAt(0).toUpperCase() + opt.slice(1)}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>Tipo</InputLabel>
-            <Select
-              value={filtroTipo}
-              label="Tipo"
-              onChange={(e) => {
-                setFiltroTipo(e.target.value);
-                setPage(0);
-              }}
-            >
-              {opcionesTipo.map((opt) => (
-                <MenuItem key={opt} value={opt}>
-                  {opt}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <FormControl fullWidth>
-            <InputLabel>Imagen</InputLabel>
-            <Select
-              value={filtroImagen}
-              label="Imagen"
-              onChange={(e) => {
-                setFiltroImagen(e.target.value);
-                setPage(0);
-              }}
-            >
-              <MenuItem value="Todos">Todos</MenuItem>
-              <MenuItem value="Con Imagen">Con Imagen</MenuItem>
-              <MenuItem value="Sin Imagen">Sin Imagen</MenuItem>
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={6} sm={4} md={2}>
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => setOrdenFechaAsc(!ordenFechaAsc)}
-            sx={{ height: '56px' }}
-          >
-            Orden: {ordenFechaAsc ? 'Más antiguas' : 'Más recientes'}
-          </Button>
-        </Grid>
-      </Grid>
+      <FiltrosIncidencias
+        search={search}
+        setSearch={setSearch}
+        filtroEstado={filtroEstado}
+        setFiltroEstado={setFiltroEstado}
+        filtroTipo={filtroTipo}
+        setFiltroTipo={setFiltroTipo}
+        fechaInicio={fechaInicio}
+        setFechaInicio={setFechaInicio}
+        fechaFin={fechaFin}
+        setFechaFin={setFechaFin}
+        ordenFechaAsc={ordenFechaAsc}
+        setOrdenFechaAsc={setOrdenFechaAsc}
+        setPage={setPage}
+        opcionesEstado={opcionesEstado}
+        opcionesTipo={opcionesTipo}
+        onLimpiarFiltros={() => {
+          setFiltroTipo('Todos');
+          setFiltroEstado('Todos');
+          setSearch('');
+          setFechaInicio(null);
+          setFechaFin(null);
+          setPage(0);
+        }}
+        filterStyles={filterStyles}
+      />
 
       {loading && (
         <Box sx={{ display: 'flex', justifyContent: 'center', my: 8 }}>
@@ -416,123 +407,12 @@ const Incidencias = () => {
           </Paper>
 
           {/* Modal para mostrar detalles */}
-          <Dialog
+          <DetalleIncidenciaModal
             open={openDetailsModal}
             onClose={() => setOpenDetailsModal(false)}
-            maxWidth="md"
-            fullWidth
-          >
-            <DialogTitle sx={{ m: 0, p: 2 }}>
-              Detalles de la Incidencia
-              <IconButton
-                aria-label="cerrar"
-                onClick={() => setOpenDetailsModal(false)}
-                sx={{
-                  position: 'absolute',
-                  right: 8,
-                  top: 8,
-                  color: (theme) => theme.palette.grey[500],
-                }}
-              >
-                <CloseIcon />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent dividers>
-              {selectedIncidencia && (
-                <Grid container spacing={3}>
-                  {selectedIncidencia.urlImagen && (
-                    <Grid item xs={12} md={6}>
-                      <Box sx={{ 
-                        p: 2, 
-                        backgroundColor: '#f5f5f5', 
-                        borderRadius: 2,
-                        display: 'flex',
-                        justifyContent: 'center',
-                        alignItems: 'center',
-                        height: '100%'
-                      }}>
-                        <img
-                          src={selectedIncidencia.urlImagen}
-                          alt="Incidencia"
-                          style={{ 
-                            maxWidth: '100%', 
-                            maxHeight: '400px', 
-                            borderRadius: 8,
-                            objectFit: 'contain'
-                          }}
-                        />
-                      </Box>
-                    </Grid>
-                  )}
-                  <Grid item xs={12} md={selectedIncidencia.urlImagen ? 6 : 12}>
-                    <Box sx={{ 
-                      p: 3,
-                      backgroundColor: '#fafafa',
-                      borderRadius: 2,
-                      height: '100%'
-                    }}>
-                      <Typography variant="h6" gutterBottom>
-                        Información de la Incidencia
-                      </Typography>
-                      
-                      <Grid container spacing={2} sx={{ mt: 2 }}>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Estudiante:</Typography>
-                          <Typography>
-                            {selectedIncidencia.nombreEstudiante} {selectedIncidencia.apellidoEstudiante}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Grado/Nivel:</Typography>
-                          <Typography>
-                            {selectedIncidencia.grado} {selectedIncidencia.nivel}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Profesor:</Typography>
-                          <Typography>
-                            {selectedIncidencia.nombreProfesor} {selectedIncidencia.apellidoProfesor}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Cargo:</Typography>
-                          <Typography>{selectedIncidencia.cargo}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Tipo:</Typography>
-                          <Typography>{selectedIncidencia.tipo}</Typography>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Estado:</Typography>
-                          {renderEstadoChip(selectedIncidencia.estado)}
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Typography variant="subtitle2">Fecha:</Typography>
-                          <Typography>
-                            {selectedIncidencia.fecha} - {selectedIncidencia.hora}
-                          </Typography>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <Typography variant="subtitle2">Detalles:</Typography>
-                          <Box sx={{ 
-                            p: 2, 
-                            backgroundColor: '#ffffff', 
-                            borderRadius: 1,
-                            border: '1px solid #e0e0e0',
-                            mt: 1
-                          }}>
-                            <Typography>
-                              {selectedIncidencia.detalle || 'No hay detalles adicionales'}
-                            </Typography>
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </Grid>
-                </Grid>
-              )}
-            </DialogContent>
-          </Dialog>
+            incidencia={selectedIncidencia}
+            renderEstadoChip={renderEstadoChip}
+          />
         </>
       )}
 
