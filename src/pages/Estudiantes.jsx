@@ -29,66 +29,93 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db } from "../firebase/firebaseConfig";
-import "bootstrap/dist/css/bootstrap.min.css";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 
-// Importamos los modales
 import AddEstudianteModal from "./models/model_Estudiante/AddEstudianteModal";
 import EditEstudianteModal from "./models/model_Estudiante/EditEstudianteModal";
 import DeleteEstudianteModal from "./models/model_Estudiante/DeleteEstudianteModal";
+import InformeModal from "./models/model_Estudiante/InformeModal";
 
-const grados = [1, 2, 3, 4, 5, 6];
+const grados = [1, 2, 3, 4, 5];
 const seccionesComunes = ["A", "B", "C", "D"];
-const seccionEspecial = "E"; // Solo para grado 1
+const seccionEspecial = "E";
 
 const Estudiantes = () => {
   const [estudiantes, setEstudiantes] = useState([]);
+  const [incidencias, setIncidencias] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
   const [search, setSearch] = useState("");
   const [gradoFilter, setGradoFilter] = useState("");
   const [seccionFilter, setSeccionFilter] = useState("");
   const [incidenciasFilter, setIncidenciasFilter] = useState("");
-
-  // Paginación
   const [page, setPage] = useState(0);
   const rowsPerPage = 10;
-
-  // Estados para los modales
   const [openAddModal, setOpenAddModal] = useState(false);
   const [openEditModal, setOpenEditModal] = useState(false);
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
+  const [openInformeModal, setOpenInformeModal] = useState(false);
   const [selectedEstudiante, setSelectedEstudiante] = useState(null);
 
-  // Función para obtener las secciones disponibles según el grado seleccionado
   const getSeccionesDisponibles = (grado) => {
-    if (grado === 1) {
-      return [...seccionesComunes, seccionEspecial];
-    }
+    if (grado === 1) return [...seccionesComunes, seccionEspecial];
     return seccionesComunes;
   };
 
   useEffect(() => {
-    const fetchEstudiantes = async () => {
+    const fetchData = async () => {
       try {
-        const snapshot = await getDocs(collection(db, "Estudiante"));
-        const estudiantesData = snapshot.docs.map((doc) => ({
+        setLoading(true);
+
+        // Obtener estudiantes
+        const estudiantesSnapshot = await getDocs(collection(db, "Estudiante"));
+        const estudiantesData = estudiantesSnapshot.docs.map(doc => ({
           id: doc.id,
+          idEstudiante: doc.id,
           ...doc.data(),
+          cantidadIncidencias: 0
         }));
-        setEstudiantes(estudiantesData);
+
+        // Obtener incidencias
+        const incidenciasSnapshot = await getDocs(collection(db, "Incidencia"));
+        const incidenciasData = incidenciasSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        }));
+
+        // Actualizar contador de incidencias de forma robusta
+        const estudiantesConIncidencias = estudiantesData.map(estudiante => {
+          // Primero intenta por idEstudiante
+          let count = incidenciasData.filter(
+            inc => inc.idEstudiante === estudiante.idEstudiante
+          ).length;
+
+          // Si no hay incidencias por id, intenta por nombre y apellido
+          if (count === 0) {
+            count = incidenciasData.filter(
+              inc =>
+                inc.nombreEstudiante === estudiante.nombres &&
+                inc.apellidoEstudiante === estudiante.apellidos
+            ).length;
+          }
+
+          return { ...estudiante, cantidadIncidencias: count };
+        });
+
+        setEstudiantes(estudiantesConIncidencias);
+        setIncidencias(incidenciasData);
       } catch (error) {
-        console.error("Error al obtener estudiantes:", error);
-        setError("No se pudieron cargar los estudiantes. Intenta más tarde.");
+        console.error("Error al cargar datos:", error);
+        setError("Error al cargar los datos. Intente nuevamente.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEstudiantes();
+    fetchData();
   }, []);
 
   const handleChangePage = (event, newPage) => {
@@ -119,7 +146,12 @@ const Estudiantes = () => {
   const handleAddEstudiante = async (estudianteData) => {
     try {
       const docRef = await addDoc(collection(db, "Estudiante"), estudianteData);
-      setEstudiantes([...estudiantes, { id: docRef.id, ...estudianteData }]);
+      setEstudiantes([...estudiantes, { 
+        id: docRef.id, 
+        idEstudiante: docRef.id,
+        cantidadIncidencias: 0,
+        ...estudianteData 
+      }]);
     } catch (error) {
       console.error("Error al añadir estudiante:", error);
       setError("Error al añadir estudiante");
@@ -207,7 +239,7 @@ const Estudiantes = () => {
             value={gradoFilter}
             onChange={(e) => {
               setGradoFilter(e.target.value);
-              setSeccionFilter(""); // Resetear sección al cambiar grado
+              setSeccionFilter("");
               setPage(0);
             }}
             sx={{ minWidth: 200 }}
@@ -293,9 +325,9 @@ const Estudiantes = () => {
                   <TableCell>Celular Apoderado</TableCell>
                   <TableCell align="center">Incidencias</TableCell>
                   <TableCell align="center">Acciones</TableCell>
+                  <TableCell align="center">Informe</TableCell>
                 </TableRow>
               </TableHead>
-
               <TableBody>
                 {filteredEstudiantes
                   .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
@@ -344,12 +376,24 @@ const Estudiantes = () => {
                           </IconButton>
                         </Tooltip>
                       </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Generar informe PDF">
+                          <IconButton
+                            color="primary"
+                            onClick={() => {
+                              setSelectedEstudiante(estudiante);
+                              setOpenInformeModal(true);
+                            }}
+                          >
+                            <PictureAsPdfIcon />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
                     </TableRow>
                   ))}
               </TableBody>
             </Table>
           </TableContainer>
-
           <TablePagination
             component="div"
             count={filteredEstudiantes.length}
@@ -384,6 +428,13 @@ const Estudiantes = () => {
         onClose={() => setOpenDeleteModal(false)}
         onConfirm={handleDeleteEstudiante}
         estudiante={selectedEstudiante}
+      />
+
+      <InformeModal
+        show={openInformeModal}
+        handleClose={() => setOpenInformeModal(false)}
+        estudiante={selectedEstudiante}
+        todasLasIncidencias={incidencias}
       />
     </Box>
   );

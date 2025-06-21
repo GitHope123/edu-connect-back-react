@@ -11,7 +11,7 @@ import {
   Divider,
   useTheme,
 } from "@mui/material";
-import { FaUser, FaChalkboardTeacher, FaBook, FaHome } from "react-icons/fa";
+import { FaUser, FaChalkboardTeacher, FaBook, FaHome, FaFile } from "react-icons/fa";
 
 const drawerWidth = 240;
 // en el nombre del app añade el logo de EduConnect en la carpeta public/logo_login_pro.svg
