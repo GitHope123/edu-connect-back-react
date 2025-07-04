@@ -64,7 +64,7 @@ const Sidebar = () => {
           component="div"
           sx={{ fontWeight: "bold", textAlign: "center" }}
         >
-          EduConnect
+          EduConnet
         </Typography>
       </Toolbar>
       <Divider sx={{ borderColor: "rgba(255,255,255,0.12)" }} />
