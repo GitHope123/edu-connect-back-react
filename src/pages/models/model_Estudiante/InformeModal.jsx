@@ -333,7 +333,14 @@ const InformeModal = ({ show, handleClose, estudiante, todasLasIncidencias }) =>
         <div className="student-info">
           <div className="info-item">
             <Typography paragraph>
-              El colegio <strong>San Jose de Cerro Alegre</strong> hace constar que el estudiante <strong>{estudiante.nombres} {estudiante.apellidos}</strong>, identificado con DNI <strong>{estudiante.dni || "No registrado"}</strong>, del grado <strong>{estudiante.grado}°</strong>, sección <strong>"{estudiante.seccion}"</strong>, durante su periodo académico presentó un total de <strong>{incidenciasEstudiante.length}</strong> registro(s) de incidencias.
+              El colegio <strong>San Jose de Cerro Alegre</strong> hace constar que el estudiante <strong>{estudiante.nombres} {estudiante.apellidos}</strong>, 
+              identificado con DNI <strong>{estudiante.dni || "No registrado"}</strong>, del grado <strong>{estudiante.grado}°</strong>, sección 
+              <strong>"{estudiante.seccion}"</strong>, el cual durante su periodo académico hasta el día de <strong>{new Date().toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}</strong>  presentó un total de <strong>{incidenciasEstudiante.length}</strong> registro(s) de incidencias.
             </Typography>
           </div>
         </div>
