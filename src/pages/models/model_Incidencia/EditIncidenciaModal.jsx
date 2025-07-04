@@ -89,8 +89,14 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
         grado: incidencia.grado || '',
         nivel: incidencia.nivel || '',
         detalle: incidencia.detalle || '',
-        fecha: incidencia.fecha || new Date().toLocaleDateString('es-ES'),
-        hora: incidencia.hora || new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }),
+        fecha: incidencia.fecha || new Date().toLocaleDateString('es-ES').replace(/\//g, '/'),
+        hora: incidencia.hora || (() => {
+          const now = new Date();
+          const hours = String(now.getHours()).padStart(2, '0');
+          const minutes = String(now.getMinutes()).padStart(2, '0');
+          const seconds = String(now.getSeconds()).padStart(2, '0');
+          return `${hours}:${minutes}:${seconds}`;
+        })(),
         tipo: incidencia.tipo || '',
         estado: incidencia.estado || 'Pendiente',
         atencion: incidencia.atencion || 'Por revisar',
@@ -108,14 +114,16 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
       
       // Parse existing time
       if (incidencia.hora) {
-        const [time, period] = incidencia.hora.split(' ');
-        let [hours, minutes] = time.split(':');
-        if (period === 'PM' && hours !== '12') {
-          hours = parseInt(hours, 10) + 12;
+        // Asumimos formato HH:MM:SS
+        const timeParts = incidencia.hora.split(':');
+        if (timeParts.length >= 2) {
+          const hours = parseInt(timeParts[0], 10);
+          const minutes = parseInt(timeParts[1], 10);
+          const seconds = timeParts[2] ? parseInt(timeParts[2], 10) : 0;
+          const date = new Date();
+          date.setHours(hours, minutes, seconds);
+          setTimeValue(date);
         }
-        const date = new Date();
-        date.setHours(hours, minutes);
-        setTimeValue(date);
       }
     }
   }, [incidencia]);
@@ -139,7 +147,12 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
 
   const handleDateChange = (newValue) => {
     setDateValue(newValue);
-    const formattedDate = newValue.toLocaleDateString('es-ES');
+    // Formatear fecha como DD/MM/YYYY
+    const day = String(newValue.getDate()).padStart(2, '0');
+    const month = String(newValue.getMonth() + 1).padStart(2, '0');
+    const year = newValue.getFullYear();
+    const formattedDate = `${day}/${month}/${year}`;
+    
     setIncidenciaData(prev => ({
       ...prev,
       fecha: formattedDate
@@ -148,10 +161,12 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
 
   const handleTimeChange = (newValue) => {
     setTimeValue(newValue);
-    const formattedTime = newValue.toLocaleTimeString('es-ES', { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+    // Formatear hora como HH:MM:SS
+    const hours = String(newValue.getHours()).padStart(2, '0');
+    const minutes = String(newValue.getMinutes()).padStart(2, '0');
+    const seconds = String(newValue.getSeconds()).padStart(2, '0');
+    const formattedTime = `${hours}:${minutes}:${seconds}`;
+    
     setIncidenciaData(prev => ({
       ...prev,
       hora: formattedTime
@@ -160,21 +175,13 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
 
   const validate = () => {
     const newErrors = {};
-    const requiredFields = {
-      nombreEstudiante: 'Nombre del estudiante es requerido',
-      apellidoEstudiante: 'Apellido del estudiante es requerido',
-      grado: 'Grado es requerido',
-      nivel: 'Nivel es requerido',
-      tipo: 'Tipo de incidencia es requerido',
-      detalle: 'Detalle de la incidencia es requerido'
-    };
-
-    Object.entries(requiredFields).forEach(([field, message]) => {
-      if (!incidenciaData[field]) {
-        newErrors[field] = message;
-      }
-    });
-
+    // Solo validamos fecha y hora ya que son los únicos campos editables
+    if (!incidenciaData.fecha) {
+      newErrors.fecha = 'Fecha es requerida';
+    }
+    if (!incidenciaData.hora) {
+      newErrors.hora = 'Hora es requerida';
+    }
     return newErrors;
   };
 
@@ -244,10 +251,10 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
         position: 'relative'
       }}>
         <Typography variant="h5" sx={{ fontWeight: 600 }}>
-          Editar Incidencia
+          Editar Fecha y Hora de Incidencia
         </Typography>
         <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
-          Modifica los detalles de la incidencia registrada
+          Solo se permite modificar la fecha y hora del registro
         </Typography>
         <IconButton
           onClick={handleClose}
@@ -268,13 +275,13 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
       <DialogContent sx={{ p: 0 }}>
         <Box sx={{ p: 3 }}>
           <Grid container spacing={4}>
-            {/* Sección Estudiante */}
+            {/* Sección Estudiante - Solo lectura */}
             <Grid item xs={12}>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(theme.palette.primary.main, 0.02) }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(theme.palette.grey[500], 0.05) }}>
                 <SectionHeader 
                   icon={<PersonIcon />} 
-                  title="Información del Estudiante"
-                  color={theme.palette.primary.main}
+                  title="Información del Estudiante (Solo lectura)"
+                  color={theme.palette.grey[600]}
                 />
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
@@ -283,18 +290,11 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                       label="Nombres del Estudiante"
                       name="nombreEstudiante"
                       value={incidenciaData.nombreEstudiante}
-                      onChange={handleChange}
-                      error={!!errors.nombreEstudiante}
-                      helperText={errors.nombreEstudiante}
-                      required
-                      variant="outlined"
-                      sx={{ 
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: theme.palette.primary.main,
-                          }
-                        }
+                      InputProps={{
+                        readOnly: true,
                       }}
+                      disabled
+                      variant="outlined"
                     />
                   </Grid>
                   <Grid item xs={12} md={6}>
@@ -303,76 +303,54 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                       label="Apellidos del Estudiante"
                       name="apellidoEstudiante"
                       value={incidenciaData.apellidoEstudiante}
-                      onChange={handleChange}
-                      error={!!errors.apellidoEstudiante}
-                      helperText={errors.apellidoEstudiante}
-                      required
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
                     />
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <FormControl fullWidth error={!!errors.nivel}>
-                      <InputLabel>Nivel *</InputLabel>
-                      <Select
-                        name="nivel"
-                        value={incidenciaData.nivel}
-                        onChange={handleChange}
-                        label="Nivel *"
-                      >
-                        {niveles.map((nivel) => (
-                          <MenuItem key={nivel} value={nivel}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <SchoolIcon fontSize="small" />
-                              {nivel}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.nivel && (
-                        <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                          {errors.nivel}
-                        </Typography>
-                      )}
-                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="Nivel"
+                      value={incidenciaData.nivel}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
+                      variant="outlined"
+                    />
                   </Grid>
                   <Grid item xs={12} md={4}>
-                    <FormControl fullWidth error={!!errors.grado}>
-                      <InputLabel>Grado *</InputLabel>
-                      <Select
-                        name="grado"
-                        value={incidenciaData.grado}
-                        onChange={handleChange}
-                        label="Grado *"
-                      >
-                        {grados.map((grado) => (
-                          <MenuItem key={grado} value={grado}>
-                            {grado}° Grado
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.grado && (
-                        <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                          {errors.grado}
-                        </Typography>
-                      )}
-                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="Grado"
+                      value={incidenciaData.grado ? `${incidenciaData.grado}° Grado` : ''}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
+                      variant="outlined"
+                    />
                   </Grid>
                   <Grid item xs={12} md={4}>
                     <TextField
                       fullWidth
                       label="Celular del Apoderado"
-                      name="celularApoderado"
                       value={incidenciaData.celularApoderado}
-                      onChange={handleChange}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
-                      placeholder="Ej: 987654321"
                     />
                   </Grid>
                 </Grid>
               </Paper>
             </Grid>
 
-            {/* Sección Incidencia */}
+            {/* Sección Incidencia - Solo fecha y hora editables */}
             <Grid item xs={12}>
               <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(theme.palette.warning.main, 0.02) }}>
                 <SectionHeader 
@@ -382,74 +360,55 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                 />
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth error={!!errors.tipo}>
-                      <InputLabel>Tipo de Incidencia *</InputLabel>
-                      <Select
-                        name="tipo"
-                        value={incidenciaData.tipo}
-                        onChange={handleChange}
-                        label="Tipo de Incidencia *"
-                      >
-                        {tiposIncidencia.map((tipo) => (
-                          <MenuItem key={tipo.value} value={tipo.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <span>{tipo.icon}</span>
-                              <span>{tipo.value}</span>
-                              <Chip 
-                                size="small" 
-                                sx={{ 
-                                  ml: 'auto',
-                                  bgcolor: alpha(tipo.color, 0.1),
-                                  color: tipo.color,
-                                  fontSize: '0.75rem'
-                                }}
-                              />
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.tipo && (
-                        <Typography variant="caption" color="error" sx={{ mt: 1, ml: 2 }}>
-                          {errors.tipo}
-                        </Typography>
-                      )}
-                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="Tipo de Incidencia"
+                      value={incidenciaData.tipo}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
+                      variant="outlined"
+                    />
                   </Grid>
                   <Grid item xs={12} md={6}>
-                    <FormControl fullWidth>
-                      <InputLabel>Estado</InputLabel>
-                      <Select
-                        name="estado"
-                        value={incidenciaData.estado}
-                        onChange={handleChange}
-                        label="Estado"
-                      >
-                        {estadosIncidencia.map((estado) => (
-                          <MenuItem key={estado.value} value={estado.value}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <Box 
-                                sx={{ 
-                                  width: 8, 
-                                  height: 8, 
-                                  borderRadius: '50%',
-                                  bgcolor: estado.color 
-                                }} 
-                              />
-                              {estado.value}
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <TextField
+                      fullWidth
+                      label="Estado"
+                      value={incidenciaData.estado}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
+                      variant="outlined"
+                    />
                   </Grid>
+                  
+                  {/* Campos editables: Fecha y Hora */}
                   <Grid item xs={12} md={6}>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
                       <DatePicker
-                        label="Fecha"
+                        label="Fecha *"
                         value={dateValue}
                         onChange={handleDateChange}
                         renderInput={(params) => (
-                          <TextField {...params} fullWidth variant="outlined" />
+                          <TextField 
+                            {...params} 
+                            fullWidth 
+                            variant="outlined" 
+                            error={!!errors.fecha}
+                            helperText={errors.fecha}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '&:hover fieldset': {
+                                  borderColor: theme.palette.warning.main,
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: theme.palette.warning.main,
+                                }
+                              }
+                            }}
+                          />
                         )}
                       />
                     </LocalizationProvider>
@@ -457,63 +416,80 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                   <Grid item xs={12} md={6}>
                     <LocalizationProvider dateAdapter={AdapterDateFns}>
                       <TimePicker
-                        label="Hora"
+                        label="Hora *"
                         value={timeValue}
                         onChange={handleTimeChange}
                         renderInput={(params) => (
-                          <TextField {...params} fullWidth variant="outlined" />
+                          <TextField 
+                            {...params} 
+                            fullWidth 
+                            variant="outlined" 
+                            error={!!errors.hora}
+                            helperText={errors.hora}
+                            sx={{
+                              '& .MuiOutlinedInput-root': {
+                                '&:hover fieldset': {
+                                  borderColor: theme.palette.warning.main,
+                                },
+                                '&.Mui-focused fieldset': {
+                                  borderColor: theme.palette.warning.main,
+                                }
+                              }
+                            }}
+                          />
                         )}
                       />
                     </LocalizationProvider>
                   </Grid>
+
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
                       label="Detalle de la Incidencia"
-                      name="detalle"
                       value={incidenciaData.detalle}
-                      onChange={handleChange}
                       multiline
                       rows={4}
-                      error={!!errors.detalle}
-                      helperText={errors.detalle || "Describe detalladamente lo ocurrido"}
-                      required
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
-                      placeholder="Describe los hechos ocurridos de manera clara y detallada..."
                     />
                   </Grid>
                   <Grid item xs={12}>
                     <TextField
                       fullWidth
                       label="URL de la Imagen"
-                      name="urlImagen"
                       value={incidenciaData.urlImagen}
-                      onChange={handleChange}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
-                      placeholder="https://ejemplo.com/imagen.jpg"
-                      helperText="Opcional: Enlace a imagen relacionada con la incidencia"
                     />
                   </Grid>
                 </Grid>
               </Paper>
             </Grid>
 
-            {/* Sección Profesor */}
+            {/* Sección Profesor - Solo lectura */}
             <Grid item xs={12}>
-              <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(theme.palette.success.main, 0.02) }}>
+              <Paper elevation={0} sx={{ p: 3, bgcolor: alpha(theme.palette.grey[500], 0.05) }}>
                 <SectionHeader 
                   icon={<SchoolIcon />} 
-                  title="Información del Profesor"
-                  color={theme.palette.success.main}
+                  title="Información del Profesor (Solo lectura)"
+                  color={theme.palette.grey[600]}
                 />
                 <Grid container spacing={3}>
                   <Grid item xs={12} md={6}>
                     <TextField
                       fullWidth
                       label="Nombres del Profesor"
-                      name="nombreProfesor"
                       value={incidenciaData.nombreProfesor}
-                      onChange={handleChange}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
                     />
                   </Grid>
@@ -521,9 +497,11 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                     <TextField
                       fullWidth
                       label="Apellidos del Profesor"
-                      name="apellidoProfesor"
                       value={incidenciaData.apellidoProfesor}
-                      onChange={handleChange}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
                     />
                   </Grid>
@@ -531,11 +509,12 @@ const EditIncidenciaModal = ({ open, onClose, onSave, incidencia }) => {
                     <TextField
                       fullWidth
                       label="Cargo del Profesor"
-                      name="cargo"
                       value={incidenciaData.cargo}
-                      onChange={handleChange}
+                      InputProps={{
+                        readOnly: true,
+                      }}
+                      disabled
                       variant="outlined"
-                      placeholder="Ej: Profesor de Matemáticas, Tutor, Coordinador..."
                     />
                   </Grid>
                 </Grid>
