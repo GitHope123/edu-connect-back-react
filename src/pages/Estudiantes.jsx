@@ -19,6 +19,7 @@ import {
   TextField,
   MenuItem,
   Grid,
+  Snackbar,
 } from "@mui/material";
 import {
   collection,
@@ -59,6 +60,8 @@ const Estudiantes = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [openInformeModal, setOpenInformeModal] = useState(false);
   const [selectedEstudiante, setSelectedEstudiante] = useState(null);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
 
   const getSeccionesDisponibles = (grado) => {
     if (grado === 1) return [...seccionesComunes, seccionEspecial];
@@ -122,25 +125,38 @@ const Estudiantes = () => {
     setPage(newPage);
   };
 
-  // Filtro avanzado
-  const filteredEstudiantes = estudiantes.filter((estudiante) => {
-    const fullName =
-      `${estudiante.nombres} ${estudiante.apellidos}`.toLowerCase();
-    const matchesSearch = fullName.includes(search.toLowerCase());
-    const matchesGrado = gradoFilter
-      ? Number(estudiante.grado) === Number(gradoFilter)
-      : true;
-    const matchesSeccion = seccionFilter
-      ? estudiante.seccion === seccionFilter
-      : true;
-    const matchesIncidencias = incidenciasFilter
-      ? incidenciasFilter === "con"
-        ? (estudiante.cantidadIncidencias ?? 0) > 0
-        : (estudiante.cantidadIncidencias ?? 0) === 0
-      : true;
+  // Filtro avanzado con ordenamiento por incidencias (mayor a menor)
+  const filteredEstudiantes = estudiantes
+    .filter((estudiante) => {
+      const fullName =
+        `${estudiante.nombres} ${estudiante.apellidos}`.toLowerCase();
+      const matchesSearch = fullName.includes(search.toLowerCase());
+      const matchesGrado = gradoFilter
+        ? Number(estudiante.grado) === Number(gradoFilter)
+        : true;
+      const matchesSeccion = seccionFilter
+        ? estudiante.seccion === seccionFilter
+        : true;
+      const matchesIncidencias = incidenciasFilter
+        ? incidenciasFilter === "con"
+          ? (estudiante.cantidadIncidencias ?? 0) > 0
+          : (estudiante.cantidadIncidencias ?? 0) === 0
+        : true;
 
-    return matchesSearch && matchesGrado && matchesSeccion && matchesIncidencias;
-  });
+      return matchesSearch && matchesGrado && matchesSeccion && matchesIncidencias;
+    })
+    .sort((a, b) => (b.cantidadIncidencias || 0) - (a.cantidadIncidencias || 0));
+
+  // Función para manejar el click en el informe
+  const handleInformeClick = (estudiante) => {
+    if ((estudiante.cantidadIncidencias || 0) === 0) {
+      setSnackbarMessage("No hay incidencias por lo tanto no es posible generar informe");
+      setSnackbarOpen(true);
+      return;
+    }
+    setSelectedEstudiante(estudiante);
+    setOpenInformeModal(true);
+  };
 
   // Funciones CRUD
   const handleAddEstudiante = async (estudianteData) => {
@@ -185,6 +201,10 @@ const Estudiantes = () => {
       console.error("Error al eliminar estudiante:", error);
       setError("Error al eliminar estudiante");
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setSnackbarOpen(false);
   };
 
   return (
@@ -380,10 +400,7 @@ const Estudiantes = () => {
                         <Tooltip title="Generar informe PDF">
                           <IconButton
                             color="primary"
-                            onClick={() => {
-                              setSelectedEstudiante(estudiante);
-                              setOpenInformeModal(true);
-                            }}
+                            onClick={() => handleInformeClick(estudiante)}
                           >
                             <PictureAsPdfIcon />
                           </IconButton>
@@ -435,6 +452,15 @@ const Estudiantes = () => {
         handleClose={() => setOpenInformeModal(false)}
         estudiante={selectedEstudiante}
         todasLasIncidencias={incidencias}
+      />
+
+      {/* Snackbar para mostrar mensajes */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleCloseSnackbar}
+        message={snackbarMessage}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       />
     </Box>
   );
