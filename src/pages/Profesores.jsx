@@ -56,6 +56,17 @@ const Profesores = () => {
   const [openDeleteModal, setOpenDeleteModal] = useState(false);
   const [selectedProfesor, setSelectedProfesor] = useState(null);
 
+  // Cargos válidos (puedes modificar según tu configuración)
+  const cargosValidos = [
+    'Docente nombrado',
+    'Docente contratado',
+    'Director',
+    'Subdirector',
+    'Coordinador',
+    'Auxiliar',
+    'Administrativo'
+  ];
+
   useEffect(() => {
     const fetchProfesores = async () => {
       try {
@@ -80,26 +91,56 @@ const Profesores = () => {
     setPage(newPage);
   };
 
-  // Filtrado avanzado
-  const filteredProfesores = profesores.filter((profesor) => {
-    const fullName = `${profesor.nombres} ${profesor.apellidos}`.toLowerCase();
-    const matchesSearch = fullName.includes(search.toLowerCase());
-    const matchesCargo = cargoFilter ? profesor.cargo === cargoFilter : true;
-    const matchesTutor =
-      tutorFilter !== ""
-        ? tutorFilter === "si"
-          ? profesor.tutor
-          : !profesor.tutor
-        : true;
+  // Función para ordenar profesores por grado y sección
+  const ordenarProfesores = (profesores) => {
+    return profesores.sort((a, b) => {
+      // Primero ordenar por si es tutor o no (tutores primero)
+      if (a.tutor && !b.tutor) return -1;
+      if (!a.tutor && b.tutor) return 1;
+      
+      // Si ambos son tutores, ordenar por grado y luego por sección
+      if (a.tutor && b.tutor) {
+        if (a.grado !== b.grado) {
+          return (a.grado || 999) - (b.grado || 999);
+        }
+        // Si el grado es igual, ordenar por sección
+        if (a.seccion && b.seccion) {
+          return a.seccion.localeCompare(b.seccion);
+        }
+        return 0;
+      }
+      
+      // Si ninguno es tutor, ordenar alfabéticamente por nombre
+      const nombreA = `${a.nombres} ${a.apellidos}`.toLowerCase();
+      const nombreB = `${b.nombres} ${b.apellidos}`.toLowerCase();
+      return nombreA.localeCompare(nombreB);
+    });
+  };
 
-    return matchesSearch && matchesCargo && matchesTutor;
-  });
+  // Filtrado avanzado
+  const filteredProfesores = ordenarProfesores(
+    profesores.filter((profesor) => {
+      const fullName = `${profesor.nombres} ${profesor.apellidos}`.toLowerCase();
+      const matchesSearch = fullName.includes(search.toLowerCase());
+      const matchesCargo = cargoFilter ? profesor.cargo === cargoFilter : true;
+      const matchesTutor =
+        tutorFilter !== ""
+          ? tutorFilter === "si"
+            ? profesor.tutor
+            : !profesor.tutor
+          : true;
+
+      return matchesSearch && matchesCargo && matchesTutor;
+    })
+  );
 
   // CRUD Operations
   const handleAddProfesor = async (profesorData) => {
     try {
       const docRef = await addDoc(collection(db, "Profesor"), profesorData);
-      setProfesores([...profesores, { id: docRef.id, ...profesorData }]);
+      const newProfesor = { id: docRef.id, ...profesorData };
+      setProfesores([...profesores, newProfesor]);
+      setError(null); // Limpiar errores previos
     } catch (error) {
       console.error("Error al añadir profesor:", error);
       setError("Error al añadir profesor");
@@ -114,6 +155,7 @@ const Profesores = () => {
           prof.id === selectedProfesor.id ? { ...prof, ...profesorData } : prof
         )
       );
+      setError(null); // Limpiar errores previos
     } catch (error) {
       console.error("Error al editar profesor:", error);
       setError("Error al editar profesor");
@@ -126,6 +168,7 @@ const Profesores = () => {
       setProfesores(
         profesores.filter((prof) => prof.id !== selectedProfesor.id)
       );
+      setError(null); // Limpiar errores previos
     } catch (error) {
       console.error("Error al eliminar profesor:", error);
       setError("Error al eliminar profesor");
@@ -270,6 +313,7 @@ const Profesores = () => {
           </Button>
         </Grid>
       </Grid>
+      
       {loading && (
         <Box sx={{ display: "flex", justifyContent: "center", my: 8 }}>
           <CircularProgress size={48} />
@@ -314,19 +358,28 @@ const Profesores = () => {
                       <TableCell>
                         {profesor.tutor ? (
                           <Chip
-                            label="Sí"
+                            label={`${profesor.grado || "?"}° ${profesor.seccion || "?"}`}
                             color="success"
+                            size="small"
+                            sx={{ 
+                              fontWeight: 'bold',
+                              cursor: 'pointer'
+                            }}
                             onClick={() =>
                               alert(
-                                `Él es tutor de ${profesor.grado || "?"}° ${
+                                `${profesor.nombres} ${profesor.apellidos} es tutor de ${profesor.grado || "?"}° ${
                                   profesor.seccion || "?"
                                 }`
                               )
                             }
-                            style={{ cursor: "pointer" }}
                           />
                         ) : (
-                          <Chip label="No" color="default" />
+                          <Chip 
+                            label="No tutor" 
+                            color="default" 
+                            size="small"
+                            variant="outlined"
+                          />
                         )}
                       </TableCell>
                       <TableCell align="center">
@@ -369,11 +422,13 @@ const Profesores = () => {
         </Paper>
       )}
 
-      {/* Modals */}
+      {/* Modals con props corregidas */}
       <AddProfesorModal
         open={openAddModal}
         onClose={() => setOpenAddModal(false)}
         onSave={handleAddProfesor}
+        cargosValidos={cargosValidos}
+        profesoresExistentes={profesores}
       />
 
       <EditProfesorModal
@@ -381,6 +436,8 @@ const Profesores = () => {
         onClose={() => setOpenEditModal(false)}
         onSave={handleEditProfesor}
         profesor={selectedProfesor}
+        cargosValidos={cargosValidos}
+        profesoresExistentes={profesores}
       />
 
       <DeleteProfesorModal

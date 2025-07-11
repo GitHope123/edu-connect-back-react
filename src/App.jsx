@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Login from './pages/Login';
+import Perfil from './pages/Perfil';
 import Dashboard from './pages/Dashboard';
 import Estudiantes from './pages/Estudiantes';
 import Profesores from './pages/Profesores';
@@ -111,6 +112,7 @@ const MainLayout = () => {
             <Route path="/estudiantes" element={<Estudiantes />} />
             <Route path="/profesores" element={<Profesores />} />
             <Route path="/incidencias" element={<Incidencias />} />
+            <Route path="/perfil" element={<Perfil />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </ContentWrapper>
