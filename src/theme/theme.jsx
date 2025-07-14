@@ -197,14 +197,8 @@ const theme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
           borderRadius: 12,
-          border: 'none', // Quitar borde blanco
-          '&:hover': {
-            transform: 'translateY(-5px)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
-            borderColor: '#CBD5E0'
-          }
+          border: 'none' // Quitar borde blanco
         }
       }
     },
